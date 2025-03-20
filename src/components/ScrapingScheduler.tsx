@@ -38,7 +38,9 @@ export function ScrapingScheduler() {
   
   useEffect(() => {
     // Setup countdown timer
-    const timer = setInterval(() => {
+    let timerId: number | undefined;
+    
+    const updateCountdown = () => {
       if (nextRun) {
         const now = new Date();
         const next = new Date(nextRun);
@@ -54,9 +56,21 @@ export function ScrapingScheduler() {
           setTimeLeft(`${minutes}m ${seconds}s`);
         }
       }
-    }, 1000);
+    };
     
-    return () => clearInterval(timer);
+    if (nextRun) {
+      // Initial update
+      updateCountdown();
+      
+      // Set up interval
+      timerId = window.setInterval(updateCountdown, 1000);
+    }
+    
+    return () => {
+      if (timerId !== undefined) {
+        window.clearInterval(timerId);
+      }
+    };
   }, [nextRun, isSchedulerActive]);
   
   const calculateNextRun = () => {
