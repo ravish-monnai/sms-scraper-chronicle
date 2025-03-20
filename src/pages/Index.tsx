@@ -6,6 +6,7 @@ import StatusCard from '@/components/StatusCard';
 import WebsiteList from '@/components/WebsiteList';
 import PhoneNumberTable from '@/components/PhoneNumberTable';
 import ScrapingScheduler from '@/components/ScrapingScheduler';
+import ScraperTester from '@/components/ScraperTester';
 import { Button } from '@/components/ui/button';
 import { StorageService } from '@/services/storage';
 import { ScraperService } from '@/services/scrapers';
@@ -121,8 +122,9 @@ const Index = () => {
               <WebsiteList />
             </div>
             
-            <div>
+            <div className="space-y-6">
               <ScrapingScheduler />
+              <ScraperTester />
             </div>
           </div>
         </div>
