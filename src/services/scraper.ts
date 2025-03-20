@@ -1,9 +1,11 @@
+
 import { v4 as uuidv4 } from 'uuid';
 import { PhoneNumberRecord, ScrapingResult } from './types';
 import { StorageService } from './storage';
 
 export class ScraperService {
   private storageService: StorageService;
+  private corsProxyUrl = 'https://corsproxy.io/?';
   
   constructor() {
     this.storageService = new StorageService();
@@ -23,7 +25,10 @@ export class ScraperService {
     
     let totalNewNumbers = 0;
     let totalProcessed = 0;
+    let errors = 0;
     const now = new Date().toISOString();
+    
+    console.log(`Starting to scrape ${websites.length} websites...`);
     
     // Process each website
     for (const website of websites) {
@@ -51,12 +56,13 @@ export class ScraperService {
         this.storageService.updateWebsiteLastScraped(website.url, now);
       } catch (error) {
         console.error(`Error scraping ${website.url}:`, error);
+        errors++;
       }
     }
     
     return {
-      success: true,
-      message: `Scraped ${totalNewNumbers} new phone numbers from ${websites.length} websites`,
+      success: errors < websites.length, // Success if at least one website was scraped without error
+      message: `Scraped ${totalNewNumbers} new phone numbers from ${websites.length - errors}/${websites.length} websites`,
       newNumbers: totalNewNumbers,
       totalProcessed
     };
@@ -71,24 +77,6 @@ export class ScraperService {
         return await this.scrapeDeviceAndBrowserInfo(url);
       } else if (url.includes('github') && url.includes('json')) {
         return await this.scrapeGithubJson(url);
-      } else if (url.includes('receive-sms-free.cc')) {
-        return await this.scrapeReceiveSmsFreeCc(url);
-      } else if (url.includes('receive-smss.com')) {
-        return await this.scrapeReceiveSmss(url);
-      } else if (url.includes('receive-sms.cc')) {
-        return await this.scrapeReceiveSmsCC(url);
-      } else if (url.includes('spytm.com')) {
-        return await this.scrapeSpytm(url);
-      } else if (url.includes('quackr.io')) {
-        return await this.scrapeQuackr(url);
-      } else if (url.includes('onlinesim.io')) {
-        return await this.scrapeOnlineSim(url);
-      } else if (url.includes('smstome.com')) {
-        return await this.scrapeSmsTome(url);
-      } else if (url.includes('temporary-phone-number.com')) {
-        return await this.scrapeTemporaryPhoneNumber(url);
-      } else if (url.includes('sms24.me')) {
-        return await this.scrapeSms24(url);
       } else {
         // Generic scraping for other websites
         return await this.scrapeGenericWebsite(url);
@@ -99,14 +87,38 @@ export class ScraperService {
     }
   }
   
+  private async fetchWithCorsProxy(url: string): Promise<Response> {
+    // Try direct fetch first
+    try {
+      console.log(`Fetching ${url} directly...`);
+      const response = await fetch(url);
+      if (response.ok) {
+        return response;
+      }
+      throw new Error('Direct fetch failed or had CORS issues');
+    } catch (error) {
+      // If direct fetch fails (usually due to CORS), try with proxy
+      console.log(`Retrying with CORS proxy: ${url}`);
+      try {
+        const proxyUrl = `${this.corsProxyUrl}${encodeURIComponent(url)}`;
+        const response = await fetch(proxyUrl);
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch with proxy: ${response.status}`);
+        }
+        
+        return response;
+      } catch (proxyError) {
+        console.error(`Proxy fetch failed for ${url}:`, proxyError);
+        throw proxyError;
+      }
+    }
+  }
+  
   private async scrapeDeviceAndBrowserInfo(url: string): Promise<string[]> {
     try {
       console.log(`Fetching data from ${url}`);
-      const response = await fetch(url);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch data: ${response.status}`);
-      }
+      const response = await this.fetchWithCorsProxy(url);
       
       const data = await response.json();
       console.log(`Received data from ${url}:`, data);
@@ -143,11 +155,7 @@ export class ScraperService {
   
   private async scrapeGithubJson(url: string): Promise<string[]> {
     try {
-      const response = await fetch(url);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch data: ${response.status}`);
-      }
+      const response = await this.fetchWithCorsProxy(url);
       
       const data = await response.json();
       
@@ -159,203 +167,10 @@ export class ScraperService {
     }
   }
   
-  private async scrapeReceiveSmsFreeCc(url: string): Promise<string[]> {
-    try {
-      const response = await fetch(url);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch data: ${response.status}`);
-      }
-      
-      const html = await response.text();
-      
-      // Extract phone numbers displayed on the page
-      // The site typically displays phone numbers in a specific format
-      const phoneRegex = /\+\d{1,3}\s?\d{3,14}/g;
-      const matches = html.match(phoneRegex) || [];
-      
-      return matches.map(num => num.replace(/\s/g, ''));
-    } catch (error) {
-      console.error(`Error scraping Receive SMS Free:`, error);
-      return [];
-    }
-  }
-  
-  private async scrapeReceiveSmss(url: string): Promise<string[]> {
-    try {
-      const response = await fetch(url);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch data: ${response.status}`);
-      }
-      
-      const html = await response.text();
-      
-      // This site often has phone numbers in a specific format
-      const phoneRegex = /\+\d{1,3}\d{6,14}/g;
-      const matches = html.match(phoneRegex) || [];
-      
-      return [...new Set(matches)]; // Remove duplicates
-    } catch (error) {
-      console.error(`Error scraping Receive SMS:`, error);
-      return [];
-    }
-  }
-  
-  private async scrapeReceiveSmsCC(url: string): Promise<string[]> {
-    // Similar to receive-smss.com but might have different HTML structure
-    try {
-      const response = await fetch(url);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch data: ${response.status}`);
-      }
-      
-      const html = await response.text();
-      
-      const phoneRegex = /\+\d{1,3}\d{6,14}/g;
-      const matches = html.match(phoneRegex) || [];
-      
-      return [...new Set(matches)];
-    } catch (error) {
-      console.error(`Error scraping Receive SMS CC:`, error);
-      return [];
-    }
-  }
-  
-  private async scrapeSpytm(url: string): Promise<string[]> {
-    try {
-      const response = await fetch(url);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch data: ${response.status}`);
-      }
-      
-      const html = await response.text();
-      
-      // Spytm might have phone numbers in a different format
-      const phoneRegex = /\+\d{1,3}\d{6,14}/g;
-      const matches = html.match(phoneRegex) || [];
-      
-      return [...new Set(matches)];
-    } catch (error) {
-      console.error(`Error scraping Spytm:`, error);
-      return [];
-    }
-  }
-  
-  private async scrapeQuackr(url: string): Promise<string[]> {
-    try {
-      const response = await fetch(url);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch data: ${response.status}`);
-      }
-      
-      const html = await response.text();
-      
-      // Extract phone numbers
-      const phoneRegex = /\+\d{1,3}\d{6,14}/g;
-      const matches = html.match(phoneRegex) || [];
-      
-      return [...new Set(matches)];
-    } catch (error) {
-      console.error(`Error scraping Quackr:`, error);
-      return [];
-    }
-  }
-  
-  private async scrapeOnlineSim(url: string): Promise<string[]> {
-    try {
-      const response = await fetch(url);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch data: ${response.status}`);
-      }
-      
-      const html = await response.text();
-      
-      // Extract phone numbers
-      const phoneRegex = /\+\d{1,3}\d{6,14}/g;
-      const matches = html.match(phoneRegex) || [];
-      
-      return [...new Set(matches)];
-    } catch (error) {
-      console.error(`Error scraping OnlineSim:`, error);
-      return [];
-    }
-  }
-  
-  private async scrapeSmsTome(url: string): Promise<string[]> {
-    try {
-      const response = await fetch(url);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch data: ${response.status}`);
-      }
-      
-      const html = await response.text();
-      
-      // Extract phone numbers
-      const phoneRegex = /\+\d{1,3}\d{6,14}/g;
-      const matches = html.match(phoneRegex) || [];
-      
-      return [...new Set(matches)];
-    } catch (error) {
-      console.error(`Error scraping SmsTome:`, error);
-      return [];
-    }
-  }
-  
-  private async scrapeTemporaryPhoneNumber(url: string): Promise<string[]> {
-    try {
-      const response = await fetch(url);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch data: ${response.status}`);
-      }
-      
-      const html = await response.text();
-      
-      // This site might list numbers in a different format
-      const phoneRegex = /[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}/g;
-      const matches = html.match(phoneRegex) || [];
-      
-      return [...new Set(matches)];
-    } catch (error) {
-      console.error(`Error scraping Temporary Phone Number:`, error);
-      return [];
-    }
-  }
-  
-  private async scrapeSms24(url: string): Promise<string[]> {
-    try {
-      const response = await fetch(url);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch data: ${response.status}`);
-      }
-      
-      const html = await response.text();
-      
-      // Extract phone numbers
-      const phoneRegex = /\+\d{1,3}\d{6,14}/g;
-      const matches = html.match(phoneRegex) || [];
-      
-      return [...new Set(matches)];
-    } catch (error) {
-      console.error(`Error scraping SMS24:`, error);
-      return [];
-    }
-  }
-  
   private async scrapeGenericWebsite(url: string): Promise<string[]> {
     try {
-      const response = await fetch(url);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch data: ${response.status}`);
-      }
+      console.log(`Generic scraping of ${url}`);
+      const response = await this.fetchWithCorsProxy(url);
       
       // Try to determine the content type
       const contentType = response.headers.get('content-type') || '';
@@ -454,42 +269,5 @@ export class ScraperService {
     
     // Re-add the '+' if it was there initially
     return hasPlus ? `+${digitsOnly}` : digitsOnly;
-  }
-  
-  // Keeping this as a fallback if all other methods fail
-  private generateRandomPhoneNumbers(min: number, max: number): string[] {
-    const count = Math.floor(Math.random() * (max - min + 1)) + min;
-    const phoneNumbers: string[] = [];
-    
-    // Phone number formats:
-    const formats = [
-      '+1XXXXXXXXXX',      // US
-      '+44XXXXXXXXXX',     // UK
-      '+49XXXXXXXXX',      // Germany
-      '+33XXXXXXXXX',      // France
-      '+7XXXXXXXXXX',      // Russia
-      '+86XXXXXXXXXXX',    // China
-      '+91XXXXXXXXXX',     // India
-      '+55XXXXXXXXXX',     // Brazil
-      '+27XXXXXXXXX',      // South Africa
-      '+61XXXXXXXXX',      // Australia
-    ];
-    
-    for (let i = 0; i < count; i++) {
-      const format = formats[Math.floor(Math.random() * formats.length)];
-      let number = '';
-      
-      for (const char of format) {
-        if (char === 'X') {
-          number += Math.floor(Math.random() * 10);
-        } else {
-          number += char;
-        }
-      }
-      
-      phoneNumbers.push(number);
-    }
-    
-    return phoneNumbers;
   }
 }
