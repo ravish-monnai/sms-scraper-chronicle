@@ -1,14 +1,14 @@
+
 import { useState } from 'react';
-import { Check, Plus, Trash, ExternalLink, Power } from 'lucide-react';
+import { Plus, Power } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from '@/components/ui/use-toast';
-import { cn } from '@/lib/utils';
 import { Website, StorageService } from '@/services/storage';
+import WebsiteItem from './WebsiteItem';
+import AddWebsiteForm from './AddWebsiteForm';
+import EmptyWebsiteList from './EmptyWebsiteList';
 
 export function WebsiteList() {
   const storageService = new StorageService();
@@ -125,6 +125,11 @@ export function WebsiteList() {
     });
   };
   
+  const handleCancelAddWebsite = () => {
+    setNewWebsite('');
+    setIsAddingNew(false);
+  };
+  
   const handleImportDefault = () => {
     const defaultWebsites = [
       'https://receive-sms-free.cc/',
@@ -215,97 +220,27 @@ export function WebsiteList() {
       </CardHeader>
       <CardContent className="pt-0">
         {isAddingNew && (
-          <div className="flex items-center space-x-2 mb-4 animate-slide-in">
-            <Input
-              placeholder="https://example.com"
-              value={newWebsite}
-              onChange={(e) => setNewWebsite(e.target.value)}
-              className="flex-1"
-              autoFocus
-            />
-            <Button variant="outline" size="icon" onClick={handleAddWebsite}>
-              <Check className="h-4 w-4" />
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="icon"
-              onClick={() => {
-                setNewWebsite('');
-                setIsAddingNew(false);
-              }}
-            >
-              <Trash className="h-4 w-4" />
-            </Button>
-          </div>
+          <AddWebsiteForm
+            newWebsite={newWebsite}
+            setNewWebsite={setNewWebsite}
+            onAdd={handleAddWebsite}
+            onCancel={handleCancelAddWebsite}
+          />
         )}
         
         <ScrollArea className="h-[300px] overflow-y-auto pr-3 -mr-3">
           <div className="space-y-2 fade-mask">
             {websites.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-48 text-center">
-                <p className="text-muted-foreground mb-3">No websites added yet</p>
-                <Button 
-                  variant="outline" 
-                  onClick={handleImportDefault}
-                >
-                  Import Default Websites
-                </Button>
-              </div>
+              <EmptyWebsiteList onImportDefault={handleImportDefault} />
             ) : (
               websites.map((website, index) => (
-                <div 
+                <WebsiteItem
                   key={index}
-                  className={cn(
-                    "flex items-center justify-between p-2 rounded-md transition-all",
-                    website.enabled 
-                      ? "bg-accent/50" 
-                      : "bg-background opacity-70"
-                  )}
-                >
-                  <div className="flex items-center flex-1 min-w-0">
-                    <Switch
-                      checked={website.enabled}
-                      onCheckedChange={() => handleToggleEnabled(index)}
-                      className="mr-3"
-                    />
-                    <div className="overflow-hidden">
-                      <div className="flex items-center">
-                        <p className={cn(
-                          "text-sm font-medium truncate mr-2",
-                          !website.enabled && "text-muted-foreground"
-                        )}>
-                          {new URL(website.url).hostname.replace('www.', '')}
-                        </p>
-                        {website.lastScraped && (
-                          <Badge variant="outline" className="text-xs">
-                            Last: {new Date(website.lastScraped).toLocaleString()}
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {website.url}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center ml-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => window.open(website.url, '_blank')}
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                      onClick={() => handleRemoveWebsite(index)}
-                    >
-                      <Trash className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
+                  website={website}
+                  index={index}
+                  onToggle={handleToggleEnabled}
+                  onRemove={handleRemoveWebsite}
+                />
               ))
             )}
           </div>
