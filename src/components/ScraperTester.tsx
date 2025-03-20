@@ -4,8 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { testWebsiteScraper } from "@/services/scrapers/testScraper";
-import { Loader2, Search, AlertCircle, Clock, Phone } from "lucide-react";
+import { Loader2, Search, AlertCircle, Clock, Phone, Info } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function ScraperTester() {
   const [url, setUrl] = useState("");
@@ -13,6 +14,7 @@ export default function ScraperTester() {
     phoneNumbers: string[];
     timing: { durationMs: number };
     error?: string;
+    usingDemoData?: boolean;
   } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -43,7 +45,16 @@ export default function ScraperTester() {
 
     try {
       const testResult = await testWebsiteScraper(url);
-      setResults(testResult);
+      
+      // Check console logs to see if demo data was used
+      const usingDemoData = testResult.phoneNumbers.length > 0 && 
+                          console.logs?.some(log => 
+                            log.includes("Providing sample disposable phone numbers"));
+      
+      setResults({
+        ...testResult,
+        usingDemoData
+      });
       
       if (testResult.success) {
         toast({
@@ -110,6 +121,16 @@ export default function ScraperTester() {
                 {(results.timing.durationMs / 1000).toFixed(2)}s
               </div>
             </div>
+
+            {results.usingDemoData && (
+              <Alert className="bg-blue-50 text-blue-800 border-blue-200">
+                <Info className="h-4 w-4" />
+                <AlertTitle>Demo Data</AlertTitle>
+                <AlertDescription>
+                  The API returned an access error, so sample demo data is being shown for demonstration purposes.
+                </AlertDescription>
+              </Alert>
+            )}
 
             {results.error ? (
               <div className="rounded-md bg-destructive/10 p-4 text-destructive">
