@@ -46,10 +46,10 @@ export default function ScraperTester() {
     try {
       const testResult = await testWebsiteScraper(url);
       
-      // Check console logs to see if demo data was used
+      // Check if this is the disposable phones endpoint by looking at the URL
+      // and if we found phone numbers - this indicates demo data was likely used
       const usingDemoData = testResult.phoneNumbers.length > 0 && 
-                          console.logs?.some(log => 
-                            log.includes("Providing sample disposable phone numbers"));
+                          url.includes('/disposable');
       
       setResults({
         ...testResult,
