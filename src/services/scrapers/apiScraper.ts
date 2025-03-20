@@ -13,9 +13,25 @@ export class ApiScraper extends BaseScraper {
       // Extract phone numbers from the API response
       if (Array.isArray(data) && data.length > 0) {
         // If it's an array of objects with phone numbers
-        return data
-          .filter(item => item && typeof item.phone === 'string')
-          .map(item => item.phone);
+        const phoneNumbers: string[] = [];
+        
+        // Handle disposable phones endpoint which has a different structure
+        if (url.includes('/disposable')) {
+          data.forEach((item: any) => {
+            if (item && typeof item.number === 'string') {
+              phoneNumbers.push(item.number);
+            }
+          });
+        } else {
+          // Standard endpoint format
+          data.forEach((item: any) => {
+            if (item && typeof item.phone === 'string') {
+              phoneNumbers.push(item.phone);
+            }
+          });
+        }
+        
+        return phoneNumbers;
       } else if (data && data.phones && Array.isArray(data.phones)) {
         // If it has a phones array property
         return data.phones;
