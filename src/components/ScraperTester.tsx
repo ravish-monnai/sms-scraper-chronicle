@@ -4,9 +4,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { testWebsiteScraper } from "@/services/scrapers/testScraper";
-import { Loader2, Search, AlertCircle, Clock, Phone, Info } from "lucide-react";
+import { Loader2, Search, AlertCircle, Clock, Phone, Info, ExternalLink } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 export default function ScraperTester() {
   const [url, setUrl] = useState("");
@@ -14,8 +15,8 @@ export default function ScraperTester() {
     phoneNumbers: string[];
     timing: { durationMs: number };
     error?: string;
-    usingDemoData?: boolean;
     debugInfo?: string;
+    usingDemoData?: boolean;
   } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -52,13 +53,9 @@ export default function ScraperTester() {
       const usingDemoData = testResult.phoneNumbers.length > 0 && 
                           url.includes('/disposable');
       
-      // Generate debug info to help troubleshoot scraping issues
-      const debugInfo = testResult.debugInfo || `Attempted to scrape ${url}`;
-      
       setResults({
         ...testResult,
-        usingDemoData,
-        debugInfo
+        usingDemoData
       });
       
       if (testResult.success) {
@@ -82,6 +79,10 @@ export default function ScraperTester() {
     } finally {
       setIsLoading(false);
     }
+  };
+  
+  const handleViewReport = () => {
+    window.location.href = '/report';
   };
 
   return (
@@ -146,10 +147,16 @@ export default function ScraperTester() {
                 <p className="mt-2 text-sm">{results.error}</p>
               </div>
             ) : results.phoneNumbers.length > 0 ? (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Phone className="h-4 w-4" />
-                  <span>Found {results.phoneNumbers.length} phone numbers</span>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Phone className="h-4 w-4" />
+                    <span>Found {results.phoneNumbers.length} phone numbers</span>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={handleViewReport}>
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    View in Report
+                  </Button>
                 </div>
                 <div className="max-h-48 overflow-y-auto rounded-md border p-2">
                   <ul className="space-y-1">
@@ -165,6 +172,21 @@ export default function ScraperTester() {
               <div className="rounded-md bg-muted p-4 text-center text-muted-foreground">
                 No phone numbers found on this website
               </div>
+            )}
+            
+            {results.debugInfo && (
+              <Accordion type="single" collapsible className="w-full">
+                <AccordionItem value="debug-info">
+                  <AccordionTrigger className="text-sm text-muted-foreground">
+                    Debug Information
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <pre className="text-xs whitespace-pre-wrap p-4 rounded bg-slate-100 dark:bg-slate-900 overflow-auto max-h-48">
+                      {results.debugInfo}
+                    </pre>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
             )}
           </div>
         )}

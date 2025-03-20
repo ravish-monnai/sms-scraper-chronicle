@@ -3,6 +3,7 @@ import { ScraperService } from './scraperService';
 import { GenericScraper } from './genericScraper';
 import { ApiScraper } from './apiScraper';
 import { JsonScraper } from './jsonScraper';
+import { StorageService } from '../storage';
 
 /**
  * Utility function to test a scraper on a specific URL
@@ -41,6 +42,23 @@ export async function testScraper(url: string): Promise<{
     }
     
     debugInfo += `\nFound ${phoneNumbers.length} phone numbers`;
+    if (phoneNumbers.length > 0) {
+      debugInfo += `\nSample numbers: ${phoneNumbers.slice(0, 3).join(', ')}${phoneNumbers.length > 3 ? '...' : ''}`;
+    }
+    
+    // When testing, store the results in local storage for the report
+    if (phoneNumbers.length > 0) {
+      const storageService = new StorageService();
+      const phoneRecords = phoneNumbers.map(number => ({
+        id: crypto.randomUUID(),
+        phoneNumber: number,
+        source: url,
+        timestamp: new Date().toISOString()
+      }));
+      storageService.addPhoneNumbers(phoneRecords);
+      debugInfo += '\nSaved phone numbers to storage for the report';
+    }
+    
     console.log(`Successfully scraped ${phoneNumbers.length} phone numbers`);
     return {
       success: true,
