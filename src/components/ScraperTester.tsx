@@ -15,6 +15,7 @@ export default function ScraperTester() {
     timing: { durationMs: number };
     error?: string;
     usingDemoData?: boolean;
+    debugInfo?: string;
   } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -51,9 +52,13 @@ export default function ScraperTester() {
       const usingDemoData = testResult.phoneNumbers.length > 0 && 
                           url.includes('/disposable');
       
+      // Generate debug info to help troubleshoot scraping issues
+      const debugInfo = testResult.debugInfo || `Attempted to scrape ${url}`;
+      
       setResults({
         ...testResult,
-        usingDemoData
+        usingDemoData,
+        debugInfo
       });
       
       if (testResult.success) {

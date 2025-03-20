@@ -88,6 +88,10 @@ export class ScraperService {
         return await this.apiScraper.scrapeDeviceAndBrowserInfo(url);
       } else if (url.includes('github') && url.includes('json')) {
         return await this.jsonScraper.scrapeGithubJson(url);
+      } else if (url.includes('receive-sms-free.cc')) {
+        // Special handling for receive-sms-free.cc site
+        console.log("Using specialized handling for receive-sms-free.cc");
+        return await this.genericScraper.scrapeGenericWebsite(url);
       } else {
         // Generic scraping for other websites
         return await this.genericScraper.scrapeGenericWebsite(url);
