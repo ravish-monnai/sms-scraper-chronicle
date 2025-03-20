@@ -8,7 +8,7 @@ import PhoneNumberTable from '@/components/PhoneNumberTable';
 import ScrapingScheduler from '@/components/ScrapingScheduler';
 import { Button } from '@/components/ui/button';
 import { StorageService } from '@/services/storage';
-import { ScraperService } from '@/services/scraper';
+import { ScraperService } from '@/services/scrapers';
 import { ArrowRight, ListFilter, Phone, Globe, Clock } from 'lucide-react';
 import { ScrapingStats, PhoneNumberRecord } from '@/services/types';
 

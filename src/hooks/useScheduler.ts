@@ -1,7 +1,6 @@
-
 import { useState, useEffect } from 'react';
 import { StorageService } from '@/services/storage';
-import { ScraperService } from '@/services/scraper';
+import { ScraperService } from '@/services/scrapers';
 
 export function useScheduler() {
   const storageService = new StorageService();
