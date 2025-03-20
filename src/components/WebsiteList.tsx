@@ -1,6 +1,5 @@
-
 import { useState } from 'react';
-import { Check, Plus, Trash, ExternalLink } from 'lucide-react';
+import { Check, Plus, Trash, ExternalLink, Power } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,6 +25,43 @@ export function WebsiteList() {
     toast({
       title: updatedWebsites[index].enabled ? 'Website Enabled' : 'Website Disabled',
       description: `${updatedWebsites[index].url} is now ${updatedWebsites[index].enabled ? 'enabled' : 'disabled'} for scraping.`,
+      duration: 3000,
+    });
+  };
+  
+  const handleEnableAllWebsites = () => {
+    if (websites.length === 0) {
+      toast({
+        title: 'No Websites Found',
+        description: 'Add websites first before trying to enable all.',
+        variant: 'destructive',
+        duration: 3000,
+      });
+      return;
+    }
+    
+    const disabledCount = websites.filter(w => !w.enabled).length;
+    
+    if (disabledCount === 0) {
+      toast({
+        title: 'All Websites Already Enabled',
+        description: 'All websites are already enabled for scraping.',
+        duration: 3000,
+      });
+      return;
+    }
+    
+    const updatedWebsites = websites.map(website => ({
+      ...website,
+      enabled: true
+    }));
+    
+    setWebsites(updatedWebsites);
+    storageService.setWebsites(updatedWebsites);
+    
+    toast({
+      title: 'All Websites Enabled',
+      description: `Enabled ${disabledCount} website${disabledCount > 1 ? 's' : ''} for scraping.`,
       duration: 3000,
     });
   };
@@ -158,6 +194,14 @@ export function WebsiteList() {
               onClick={handleImportDefault}
             >
               Import Default
+            </Button>
+            <Button 
+              variant="outline"
+              size="sm"
+              onClick={handleEnableAllWebsites}
+            >
+              <Power className="h-4 w-4 mr-2" />
+              Enable All
             </Button>
             <Button 
               size="sm"
